@@ -3,6 +3,7 @@
 #include <time.h>
 
 #define MAX 5
+#define MAXRESERVA 3
 
 // Variáveis globais
 char tipos[4] = {'I', 'O', 'T', 'L'}; // Tipos de peças
@@ -21,6 +22,12 @@ typedef struct {
     int fim;
     int total;
 } Fila;
+
+// Struct da pilha de reserva
+typedef struct {
+    Peca itens[MAXRESERVA];
+    int topo;
+} PilhaReserva;
 
 // ====================================
 //         Funções da fila
@@ -82,6 +89,63 @@ void mostrarFilaPeca(Fila *f) {
     printf("\n");
 }
 
+// ==========================================
+//         Funções da Pilha de Reserva
+// ==========================================
+
+// Inicializa a pilha de reserva
+void inicializarPilhaReserva(PilhaReserva *p) {
+    p->topo = -1;
+}
+
+// Verifica se a pilha de reserva está cheia
+int pilhaReservaCheia(PilhaReserva *p) {
+    return p->topo == MAXRESERVA - 1;
+}
+
+// Verifica se a pilha de reserva está vazia
+int pilhaReservaVazia(PilhaReserva *p) {
+    return p->topo == -1;
+}
+
+// Adiciona uma peça na pilha de reserva
+void reservarPeca(Fila *f, PilhaReserva *pr) {
+    Peca pRemovida; // Armazena a peça que será removida da fila
+
+    if(pilhaReservaCheia(pr)) { // Verifica se a pilha de reserva está cheia
+        printf("\nErro, pilha de reserva cheia!\n");
+        return;
+    }
+
+    jogarPeca(f, &pRemovida); // Remove a peça da fila
+    pr->topo++;
+    pr->itens[pr->topo] = pRemovida; // Insere a peça removida na pilha de reserva
+}
+
+// Remove uma peça da pilha de reserva e joga ela
+void jogarPecaReservada(PilhaReserva *pr, Peca *pJogada) {
+    if(pilhaReservaVazia(pr)) { // Verifica se a pilha de reserva está vazia
+        printf("\nErro, pilha de reserva vazia!\n");
+        return;
+    }
+
+    *pJogada = pr->itens[pr->topo]; // Remove a peça do topo da pilha de reserva
+    pr->topo--; // Decrementa o topo da pilha de reserva
+
+    printf("\nPeça Jogada da Reserva -> [%c, %d]\n", pJogada->nome, pJogada->id);
+}
+
+// Mostra a pilha de reserva
+void mostrarPilhaReserva(PilhaReserva *pr) {
+    printf("\n--- PILHA DE RESERVA ---\n");
+
+    for(int i = pr->topo; i >= 0; i--) {
+        printf("[%c, %d]", pr->itens[i].nome, pr->itens[i].id);
+    }
+
+    printf("\n");
+}
+
 // ====================================
 //         Funções auxiliares
 // ====================================
@@ -106,11 +170,14 @@ int main() {
     srand(time(NULL)); // Semeia o gerador de números aleátórios
 
     Fila f; // Variável para armazenar a fila
+    PilhaReserva pr; // Variável para armazenar a pilha de reserva
     Peca p; // Variável para armazenar a peça gerada pela função gerar peça
     Peca jogada; // Armazena a peça que foi removida(jogada).
+    Peca pReservadaJogada; // Armazena a peça que foi jogada da reserva
     int opcaoMenu = -1;
 
     inicializarFila(&f);
+    inicializarPilhaReserva(&pr);
     
     // Este loop serve para preencher a fila com as primeiras peças do jogo
     for(int i = 0; i < MAX; i++) {
@@ -120,27 +187,43 @@ int main() {
 
 
     do {
-    mostrarFilaPeca(&f);
-    printf("\n====== MENU ======\n");
-    printf("1. Jogar peça\n");
-    printf("2. Inserir nova peça\n");
-    printf("0. Sair\n");
-    printf("Escolha o seu movimento: ");
-    scanf("%d", &opcaoMenu);
-    limparBuffer();
+        mostrarFilaPeca(&f);
+        mostrarPilhaReserva(&pr);
+        printf("\n====== MENU ======\n");
+        printf("1. Jogar peça\n");
+        printf("2. Reservar peça\n");
+        printf("3. Jogar peça reservada\n");
+        printf("0. Sair\n");
+        printf("Escolha o seu movimento: ");
+        scanf("%d", &opcaoMenu);
+        limparBuffer();
 
-    switch(opcaoMenu) {
-        case 1:
-            jogarPeca(&f, &jogada);
-            break;
+        switch(opcaoMenu) {
+            case 1:
+                jogarPeca(&f, &jogada);
+                gerarPeca(tipos, &contadorId, &p);
+                inserirNovaPeca(&f, p);
+                break;
+
+            case 2:
+                reservarPeca(&f, &pr);
+                gerarPeca(tipos, &contadorId, &p);
+                inserirNovaPeca(&f, p);
+                break;
+
+            case 3:
+                jogarPecaReservada(&pr, &pReservadaJogada);
+                break;
+
+            case 0:
+                printf("Saindo...\n");
+                break;
+
+            default:
+                printf("Opção inválida! Tente novamente.\n");
+                break;
+        }
         
-        case 2:
-            gerarPeca(tipos, &contadorId, &p);
-            inserirNovaPeca(&f, p);
-            break;
-        case 0:
-            printf("Saindo...\n");
-    }
     } while(opcaoMenu != 0);
 
 
