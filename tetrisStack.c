@@ -54,6 +54,7 @@ int filaVazia(Fila *f) {
 void inserirNovaPeca(Fila *f, Peca p) {
     if(filaCheia(f)) {
         printf("\nErro, fila cheia!\n");
+        getchar();
         return;
     }
 
@@ -63,9 +64,10 @@ void inserirNovaPeca(Fila *f, Peca p) {
 }
 
 // Remover (Jogar) Peça na fila
-void jogarPeca(Fila *f, Peca *pJogada) {
+void jogarPeca(Fila *f, Peca *pJogada, int jogadaOuReserva) {
     if(filaVazia(f)) {
         printf("\nErro, fila vazia!\n");
+        getchar();
         return;
     }
 
@@ -73,14 +75,67 @@ void jogarPeca(Fila *f, Peca *pJogada) {
     f->inicio = (f->inicio + 1) % MAX; // Lógica circular, atualiza o inicio da fila
     f->total--; // Decrementa em 1 o tamanho da fila
 
-    printf("\nPeça Jogada -> [%c, %d]\n", pJogada->nome, pJogada->id);
+    if(jogadaOuReserva == 1) { // Só executa se for uma jogada normal vinda do case 1 do menu
+    printf("\nPeca Jogada -> [%c, %d]\n", pJogada->nome, pJogada->id);
+    getchar();
+    }
 
 
 }
 
+// Trocar a peça atual da fila com o topo da pilha de reserva
+void trocarPecaAtualFila(Fila *f, PilhaReserva *pr) {
+    if(filaVazia(f)) {
+        printf("\nErro, fila vazia!\n");
+        getchar();
+        return;
+    }
+
+    if(pilhaReservaVazia(pr)) {
+        printf("\nErro, pilha de reserva vazia!\n");
+        getchar();
+        return;
+    }
+
+    Peca pFila = f->itens[f->inicio]; // Armazena a peça atual da fila
+    Peca pPilha = pr->itens[pr->topo]; // Armazena a peça do topo da pilha de reserva
+
+    f->itens[f->inicio] = pPilha; // Troca a peça da fila com a peça do topo da pilha de reserva
+    pr->itens[pr->topo] = pFila; // Troca a peça do topo da pilha de reserva com a peça da fila
+
+    printf("\nPeca da fila [%c, %d] trocada com a peca da pilha de reserva [%c, %d]\n",
+           pFila.nome, pFila.id, pPilha.nome, pPilha.id);
+
+    getchar();
+}
+
+void trocarMultiplasPecaFila(Fila *f, PilhaReserva *pr) {
+    if(f->total < 3) {
+        printf("\nErro, fila nao possui 3 pecas!\n");
+        getchar();
+        return;
+    }
+
+    if(pr->topo < 2) {
+        printf("\nErro, pilha de reserva nao possui 3 pecas!\n");
+        getchar();
+        return;
+    }
+
+
+
+    for(int i = 0; i < 3; i++) {
+        Peca pfila = f->itens[(f->inicio + i) % MAX]; // Armazena a peça da fila
+        Peca pPilha = pr->itens[(pr->topo - i)]; // Armazena a peça da pilha de reserva
+
+        f->itens[(f->inicio + i) % MAX] = pPilha; // Substitui a peça da fila com a peça da pilha de reserva
+        pr->itens[(pr->topo - i)] = pfila; // Substitui a peça da pilha de reserva com a peça da fila
+    }
+}
+
 // Função para mostra a fila de peças
 void mostrarFilaPeca(Fila *f) {
-    printf("\n--- FILA DE PEÇAS ---\n");
+    printf("\n--- FILA DE PECAS ---\n");
 
     for(int i = 0, idx = f->inicio; i < f->total; i++, idx = (idx + 1) % MAX) {
         printf("[%c, %d]", f->itens[idx].nome, f->itens[idx].id);
@@ -114,31 +169,36 @@ void reservarPeca(Fila *f, PilhaReserva *pr) {
 
     if(pilhaReservaCheia(pr)) { // Verifica se a pilha de reserva está cheia
         printf("\nErro, pilha de reserva cheia!\n");
+        getchar();
         return;
     }
 
-    jogarPeca(f, &pRemovida); // Remove a peça da fila
+    jogarPeca(f, &pRemovida, 3); // Remove a peça da fila
     pr->topo++;
     pr->itens[pr->topo] = pRemovida; // Insere a peça removida na pilha de reserva
+    printf("\nPeca Reservada -> [%c, %d]\n", pRemovida.nome, pRemovida.id);
+    getchar();
 }
 
 // Remove uma peça da pilha de reserva e joga ela
 void jogarPecaReservada(PilhaReserva *pr, Peca *pJogada) {
     if(pilhaReservaVazia(pr)) { // Verifica se a pilha de reserva está vazia
         printf("\nErro, pilha de reserva vazia!\n");
+        getchar();
         return;
     }
 
     *pJogada = pr->itens[pr->topo]; // Remove a peça do topo da pilha de reserva
     pr->topo--; // Decrementa o topo da pilha de reserva
 
-    printf("\nPeça Jogada da Reserva -> [%c, %d]\n", pJogada->nome, pJogada->id);
+    printf("\nPeca Jogada da Reserva -> [%c, %d]\n", pJogada->nome, pJogada->id);
+    getchar(); // Pausa para o usuário ver a peça jogada
 }
 
 // Mostra a pilha de reserva
 void mostrarPilhaReserva(PilhaReserva *pr) {
     printf("\n--- PILHA DE RESERVA ---\n");
-
+    printf("(Topo -> base): ");
     for(int i = pr->topo; i >= 0; i--) {
         printf("[%c, %d]", pr->itens[i].nome, pr->itens[i].id);
     }
@@ -190,9 +250,11 @@ int main() {
         mostrarFilaPeca(&f);
         mostrarPilhaReserva(&pr);
         printf("\n====== MENU ======\n");
-        printf("1. Jogar peça\n");
-        printf("2. Reservar peça\n");
-        printf("3. Jogar peça reservada\n");
+        printf("1. Jogar peca da frente da fila\n");
+        printf("2. Enviar peca para a pilha reserva\n");
+        printf("3. Usar peca da pilha de reserva\n");
+        printf("4. Trocar peca da frente da fila com o topo da pilha\n");
+        printf("5. Trocar os 3 primeiros da fila com as 3 pecas da pilha\n");
         printf("0. Sair\n");
         printf("Escolha o seu movimento: ");
         scanf("%d", &opcaoMenu);
@@ -200,19 +262,27 @@ int main() {
 
         switch(opcaoMenu) {
             case 1:
-                jogarPeca(&f, &jogada);
-                gerarPeca(tipos, &contadorId, &p);
-                inserirNovaPeca(&f, p);
+                jogarPeca(&f, &jogada, 1); // Remove a peça da fila (jogada)
+                gerarPeca(tipos, &contadorId, &p); // Gera uma nova peça
+                inserirNovaPeca(&f, p); // Insere a nova peça na fila
                 break;
 
             case 2:
-                reservarPeca(&f, &pr);
-                gerarPeca(tipos, &contadorId, &p);
-                inserirNovaPeca(&f, p);
+                reservarPeca(&f, &pr); // Remove a peça da fila e insere na pilha de reserva
+                gerarPeca(tipos, &contadorId, &p); // Gera uma nova peça
+                inserirNovaPeca(&f, p); // Insere a nova peça na fila
                 break;
 
             case 3:
-                jogarPecaReservada(&pr, &pReservadaJogada);
+                jogarPecaReservada(&pr, &pReservadaJogada); // Remove a peça da pilha de reserva (jogada)
+                break;
+
+            case 4:
+                trocarPecaAtualFila(&f, &pr);
+                break;
+
+            case 5:
+                trocarMultiplasPecaFila(&f, &pr);
                 break;
 
             case 0:
@@ -221,6 +291,7 @@ int main() {
 
             default:
                 printf("Opção inválida! Tente novamente.\n");
+                getchar(); // Pausa para o usuário ver a mensagem
                 break;
         }
         
